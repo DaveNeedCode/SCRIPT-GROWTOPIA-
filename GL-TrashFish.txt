@@ -1,0 +1,51 @@
+fishId = {
+    3000, -- goldfish
+    3026, -- catfish
+    3030, -- dogfish
+    3038, -- bass
+    3032, -- gar
+    3034, -- mahi mahi
+    3036, -- sunfish
+    3092, -- skeletal horsie
+    3096, -- demon angler
+    3094 -- ghost fish
+}
+
+function pause(num)
+    local startTime = os.clock()
+    local duration = num / 1000
+    while os.clock() - startTime < duration do
+        coroutine.yield()
+    end
+end
+
+function avoid()
+    while true do
+        pause(100)
+        for _, fish in pairs(fishId) do
+            for _, inv in pairs(getInventory()) do
+                if inv.id == fish then
+                    sendPacket(2, "action|trash\n|itemID|" .. inv.id)
+                    sendPacket(
+                        2,
+                        "action|dialog_return\ndialog_name|trash_item\nitemID|" .. inv.id .. "|\ncount|" .. inv.amount
+                    )
+                end
+            end
+        end
+    end
+end
+
+local routine = coroutine.create(avoid)
+
+AddHook(
+    "OnVarlist",
+    "fish",
+    function(v)
+        coroutine.resume(routine)
+        if v[0] == "OnDialogRequest" and v[1]:find("trash") then
+            return true
+        end
+        return false
+    end
+)
