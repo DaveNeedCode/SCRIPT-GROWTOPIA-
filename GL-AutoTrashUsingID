@@ -1,0 +1,40 @@
+
+function trashItem(itemID, maxAmount)
+    local itemAmount = getInventoryAmount(itemID)
+    if itemAmount > 0 then
+        local amountToTrash = math.min(itemAmount, maxAmount)
+
+        sendPacket(2, "action|trash\n|itemID|" .. itemID)
+        sendPacket(2, "action|dialog_return\ndialog_name|trash_item\nitemID|" .. itemID .. "|\ncount|" .. amountToTrash)
+        sendPacket(2, "action|dialog_return\ndialog_name|ok")
+        
+        sendPacket(2, "action|dialog_return\ndialog_name|close")
+    end
+end
+
+function getInventoryAmount(itemID)
+    for _, item in pairs(getInventory()) do
+        if item.id == itemID then
+            return item.amount
+        end
+    end
+    return 0
+end
+
+function main()
+    local item_id_to_trash = 54 -- ID item yang ingin dibuang, ganti dengan item yang diinginkan
+    local maxAmount = 200 -- Jumlah maksimum item sebelum dibuang
+
+    while true do
+        local itemAmount = getInventoryAmount(item_id_to_trash)
+        
+        if itemAmount >= maxAmount then
+            trashItem(item_id_to_trash, maxAmount)
+        end
+        
+        sleep(1000)  -- Delay 1000 ms (1 detik)
+    end
+end
+
+-- Menjalankan fungsi utama
+main()
