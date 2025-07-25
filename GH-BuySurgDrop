@@ -1,0 +1,82 @@
+-- CONFIGURASI UTAMA
+local config = {
+  -- Daftar ID item yang akan di-drop
+  seedDrop = {
+    8500, 1240, 1256, 1258, 1260,
+    1262, 1264, 1266, 1268, 1270,
+    1296, 4308, 4310, 4312, 4314,
+    4316, 4318, 4296
+  },
+  -- Koordinat tempat drop
+  posDrop = { x = 3, y = 112 },
+  -- Batas maksimum total seed sebelum trigger drop
+  maxInventory = 200,
+  -- Delay default (ms) untuk tiap aksi
+  delayAction = 500
+}
+
+-- Menghitung jumlah item tertentu di inventory
+local function getInventoryAmount(itemID)
+  for _, slot in pairs(getInventory()) do
+    if slot.id == itemID then
+      return slot.amount
+    end
+  end
+  return 0
+end
+
+-- Menghitung total seed di inventory berdasarkan daftar ID
+local function getTotalSeedCount()
+  local total = 0
+  for _, id in ipairs(config.seedDrop) do
+    total = total + getInventoryAmount(id)
+  end
+  return total
+end
+
+-- Fungsi untuk drop satu item (semua jumlahnya) di koordinat tertentu
+local function dropItem(itemID, dropX, dropY)
+  local amount = getInventoryAmount(itemID)
+  if amount > 0 then
+    -- Pergi ke posisi drop (walk)
+    findPath(dropX, dropY, 200)
+    sleep(config.delayAction)
+    -- Kirim packet drop per item
+    for i = 1, amount do
+      sendPacket(2, "action|drop\n|itemID|" .. itemID)
+      sleep(50)  -- jeda kecil untuk setiap drop
+    end
+  end
+end
+
+-- Fungsi untuk drop semua seed sesuai daftar
+local function dropAllSeeds()
+  for _, id in ipairs(config.seedDrop) do
+    dropItem(id, config.posDrop.x, config.posDrop.y)
+    sleep(config.delayAction)
+  end
+end
+
+-- Loop utama: beli sampai full, lalu drop, lalu ulangi
+local function autoDropSystem()
+  while true do
+    -- 1. Beli pack surg hingga inventory penuh (>= maxInventory)
+    repeat
+      sendPacket(2, "action|buy\nitem|surg")
+      sleep(config.delayAction)
+    until getTotalSeedCount() >= config.maxInventory
+
+    -- 2. Kapai posisi drop sekali lagi untuk berjagaâ€”kadang save state
+    findPath(config.posDrop.x, config.posDrop.y, 200)
+    sleep(config.delayAction * 2)
+
+    -- 3. Buang semua seed
+    dropAllSeeds()
+
+    -- 4. Delay sebelum loop berikutnya
+    sleep(config.delayAction * 2)
+  end
+end
+
+-- Jalankan sistem otomatis
+autoDropSystem()
